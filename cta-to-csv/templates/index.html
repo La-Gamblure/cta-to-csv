@@ -285,10 +285,84 @@
             overflow: visible;
             transform: rotate(5deg);
         }
+        
+        /* Arrière-plan immonde */
+        body {
+            background-image: url('https://i.gifer.com/2iiB.gif'), url('https://i.gifer.com/7wpS.gif');
+            background-repeat: repeat;
+            background-attachment: fixed;
+            background-size: 200px, 300px;
+            background-blend-mode: difference;
+            animation: bgScroll 20s linear infinite;
+        }
+        
+        @keyframes bgScroll {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 500px 500px, -500px -500px; }
+        }
+        
+        /* Curseur personnalisé immonde */
+        * {
+            cursor: url('https://cur.cursors-4u.net/symbols/sym-1/sym46.cur'), auto !important;
+        }
+        
+        /* Texte clignotant arc-en-ciel */
+        @keyframes rainbow {
+            0% { color: red; }
+            14% { color: orange; }
+            28% { color: yellow; }
+            42% { color: green; }
+            57% { color: blue; }
+            71% { color: indigo; }
+            85% { color: violet; }
+            100% { color: red; }
+        }
+        
+        .rainbow-text {
+            animation: rainbow 3s infinite;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+        
+        /* Marquee défilant en bas de page */
+        .marquee-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: yellow;
+            color: red;
+            padding: 10px 0;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 1000;
+            overflow: hidden;
+            border-top: 3px dashed red;
+        }
+        
+        .marquee-text {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 15s linear infinite;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        
+        /* Conteneur principal avec fond semi-transparent pour la lisibilité */
+        .main-container {
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            margin-bottom: 50px; /* Pour laisser de la place au marquee */
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container py-4 main-container">
         <!-- Notification CSV -->
         <div class="csv-notification" id="csv-notification">
             <div class="csv-notification-content">
@@ -300,7 +374,7 @@
         
         <div class="card">
             <div class="card-header text-center">
-                <h2>CTA to CSV</h2>
+                <h2 class="rainbow-text">CTA to CSV</h2>
                 <p class="mb-0">Analysez votre collection NFT et obtenez un rapport détaillé au format CSV</p>
             </div>
             <div class="card-body p-4">
@@ -691,6 +765,13 @@
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Je suis parfaitement satisfait de ma vie amoureuse</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Marquee défilant en bas de page -->
+                <div class="marquee-container">
+                    <div class="marquee-text">
+                        🔥🔥🔥 FÉLICITATIONS !!! VOUS ÊTES LE 1.000.000ème VISITEUR !!! CLIQUEZ PARTOUT POUR GAGNER UN IPHONE 15 PRO MAX !!! 🔥🔥🔥 ATTENTION !!! VOTRE ORDINATEUR EST PEUT-ÊTRE INFECTÉ PAR 69 VIRUS !!! CLIQUEZ POUR SCANNER MAINTENANT !!! 🔥🔥🔥
                     </div>
                 </div>
                 

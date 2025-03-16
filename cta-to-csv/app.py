@@ -300,21 +300,26 @@ def api_download():
         mem_file.write(status["result"].encode('utf-8'))
         mem_file.seek(0)
         
+        # Générer un nom de fichier avec timestamp pour éviter les problèmes de cache
+        timestamp = int(time.time())
+        filename = f"nft_par_nom_rarete_element_{address[:8]}_{timestamp}.csv"
+        
         response = send_file(
             mem_file,
             mimetype='text/csv',
             as_attachment=True,
-            download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
+            download_name=filename
         )
         
         # Ajouter des en-têtes pour éviter la mise en cache
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
         
         return response
     except Exception as e:
-        app.logger.error(f"Erreur lors du téléchargement du CSV: {str(e)}")
+        print(f"Erreur lors du téléchargement: {str(e)}")
         return jsonify({"error": f"Erreur lors du téléchargement: {str(e)}"}), 500
 
 @app.route('/api/process', methods=['GET'])
