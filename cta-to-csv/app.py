@@ -206,11 +206,7 @@ def index():
 
 @app.route('/process', methods=['GET', 'POST'])
 def process():
-    # Récupérer l'adresse depuis les arguments GET ou le formulaire POST
-    if request.method == 'POST':
-        address = request.form.get('address', '')
-    else:
-        address = request.args.get('address', '')
+    address = request.args.get('address', '') or request.form.get('address', '')
     
     if not address:
         return jsonify({"error": "Adresse non spécifiée"})
@@ -222,8 +218,8 @@ def process():
     processing_status[address] = {
         "status": "processing",
         "count": 0,
-        "error": None,
-        "result": None
+        "error": "",
+        "result": ""
     }
     
     # Démarrer le traitement en arrière-plan

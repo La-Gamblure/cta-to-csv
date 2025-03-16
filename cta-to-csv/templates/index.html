@@ -696,12 +696,30 @@
                     fetch(`/process?address=${encodeURIComponent(address)}`, {
                         method: 'GET'
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Réponse du serveur:", data);
+                        if (data.status === "processing") {
+                            // Continuer avec la mise à jour du compteur
+                            updateCounter();
+                        } else if (data.error) {
+                            clearInterval(messageInterval);
+                            document.getElementById('loading').style.display = 'none';
+                            counterElement.style.display = 'none';
+                            alert(`Erreur: ${data.error}`);
+                        }
+                    })
                     .catch(error => {
                         clearInterval(messageInterval);
                         document.getElementById('loading').style.display = 'none';
                         counterElement.style.display = 'none';
-                        alert(`Erreur de connexion: ${error}`);
+                        console.error("Erreur lors de la requête:", error);
+                        alert(`Erreur de connexion: ${error.message}`);
                     });
                     
                     // Fonction pour mettre à jour le compteur
@@ -766,133 +784,130 @@
                             });
                     }
                     
-                    // Démarrer la mise à jour du compteur
-                    updateCounter();
-                });
-                
-                // Fonction pour fermer la notification
-                function closeNotification() {
-                    document.getElementById('csv-notification').classList.remove('show');
-                }
-                
-                // Afficher tous les messages drôles pour le style
-                document.addEventListener('DOMContentLoaded', function() {
-                    const funnyMessagesContainer = document.querySelector('.funny-messages');
-                    funnyMessagesContainer.style.display = 'block';
+                    // Fonction pour fermer la notification
+                    function closeNotification() {
+                        document.getElementById('csv-notification').classList.remove('show');
+                    }
                     
-                    const funnyMessages = document.querySelectorAll('.funny-message');
-                    funnyMessages.forEach(message => {
-                        message.style.display = 'none';
-                    });
-                    
-                    // Validation en temps réel de l'adresse
-                    const addressInput = document.getElementById('address');
-                    const addressError = document.getElementById('address-error');
-                    
-                    addressInput.addEventListener('input', function() {
-                        const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
-                        if (this.value && !ethAddressRegex.test(this.value)) {
-                            this.classList.add('is-invalid');
-                            addressError.style.display = 'block';
-                        } else {
-                            this.classList.remove('is-invalid');
-                            addressError.style.display = 'none';
-                        }
-                    });
-                    
-                    // Gestion du bouton secret (Issou GIF)
-                    document.getElementById('secret-button').addEventListener('click', function() {
-                        const modal = new bootstrap.Modal(document.getElementById('rickrollModal'));
-                        modal.show();
-                    });
-                    
-                    // Plus besoin de gérer l'iframe puisqu'on utilise un GIF
-                    document.getElementById('rickrollModal').addEventListener('hidden.bs.modal', function() {
-                        // Rien à faire ici
-                    });
-                    
-                    // Fonction pour le modal Issou
-                    document.getElementById('issouButton').addEventListener('click', function() {
-                        var myModal = new bootstrap.Modal(document.getElementById('issouModal'));
-                        myModal.show();
-                    });
-
-                    // Animation pour le CSV prêt
-                    function showCsvReadyNotification() {
-                        // Créer la notification
-                        const notification = document.createElement('div');
-                        notification.className = 'csv-notification';
-                        notification.innerHTML = `
-                            <div class="csv-notification-content">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Votre CSV est prêt ! Téléchargement en cours...</span>
-                                <button type="button" class="btn-close" aria-label="Close"></button>
-                            </div>
-                        `;
+                    // Afficher tous les messages drôles pour le style
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const funnyMessagesContainer = document.querySelector('.funny-messages');
+                        funnyMessagesContainer.style.display = 'block';
                         
-                        // Ajouter au body
-                        document.body.appendChild(notification);
-                        
-                        // Afficher avec animation
-                        setTimeout(() => {
-                            notification.classList.add('show');
-                        }, 100);
-                        
-                        // Fermer la notification quand on clique sur le bouton close
-                        notification.querySelector('.btn-close').addEventListener('click', () => {
-                            notification.classList.remove('show');
-                            setTimeout(() => {
-                                notification.remove();
-                            }, 500);
+                        const funnyMessages = document.querySelectorAll('.funny-message');
+                        funnyMessages.forEach(message => {
+                            message.style.display = 'none';
                         });
                         
-                        // Fermer automatiquement après 5 secondes
-                        setTimeout(() => {
-                            notification.classList.remove('show');
+                        // Validation en temps réel de l'adresse
+                        const addressInput = document.getElementById('address');
+                        const addressError = document.getElementById('address-error');
+                        
+                        addressInput.addEventListener('input', function() {
+                            const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+                            if (this.value && !ethAddressRegex.test(this.value)) {
+                                this.classList.add('is-invalid');
+                                addressError.style.display = 'block';
+                            } else {
+                                this.classList.remove('is-invalid');
+                                addressError.style.display = 'none';
+                            }
+                        });
+                        
+                        // Gestion du bouton secret (Issou GIF)
+                        document.getElementById('secret-button').addEventListener('click', function() {
+                            const modal = new bootstrap.Modal(document.getElementById('rickrollModal'));
+                            modal.show();
+                        });
+                        
+                        // Plus besoin de gérer l'iframe puisqu'on utilise un GIF
+                        document.getElementById('rickrollModal').addEventListener('hidden.bs.modal', function() {
+                            // Rien à faire ici
+                        });
+                        
+                        // Fonction pour le modal Issou
+                        document.getElementById('issouButton').addEventListener('click', function() {
+                            var myModal = new bootstrap.Modal(document.getElementById('issouModal'));
+                            myModal.show();
+                        });
+
+                        // Animation pour le CSV prêt
+                        function showCsvReadyNotification() {
+                            // Créer la notification
+                            const notification = document.createElement('div');
+                            notification.className = 'csv-notification';
+                            notification.innerHTML = `
+                                <div class="csv-notification-content">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Votre CSV est prêt ! Téléchargement en cours...</span>
+                                    <button type="button" class="btn-close" aria-label="Close"></button>
+                                </div>
+                            `;
+                            
+                            // Ajouter au body
+                            document.body.appendChild(notification);
+                            
+                            // Afficher avec animation
                             setTimeout(() => {
-                                notification.remove();
-                            }, 500);
-                        }, 5000);
-                    }
+                                notification.classList.add('show');
+                            }, 100);
+                            
+                            // Fermer la notification quand on clique sur le bouton close
+                            notification.querySelector('.btn-close').addEventListener('click', () => {
+                                notification.classList.remove('show');
+                                setTimeout(() => {
+                                    notification.remove();
+                                }, 500);
+                            });
+                            
+                            // Fermer automatiquement après 5 secondes
+                            setTimeout(() => {
+                                notification.classList.remove('show');
+                                setTimeout(() => {
+                                    notification.remove();
+                                }, 500);
+                            }, 5000);
+                        }
 
-                    // Écouteur d'événement pour le formulaire
-                    document.querySelector('form').addEventListener('submit', function() {
-                        // Stocker dans localStorage qu'une requête est en cours
-                        localStorage.setItem('csvRequested', 'true');
-                    });
+                        // Écouteur d'événement pour le formulaire
+                        document.querySelector('form').addEventListener('submit', function() {
+                            // Stocker dans localStorage qu'une requête est en cours
+                            localStorage.setItem('csvRequested', 'true');
+                        });
 
-                    // Vérifier si un CSV a été demandé précédemment
-                    if (localStorage.getItem('csvRequested') === 'true') {
-                        // Vérifier si le CSV est prêt (si le statut est "done")
-                        fetch('/status')
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.status === 'done') {
-                                    showCsvReadyNotification();
-                                    localStorage.removeItem('csvRequested');
-                                }
-                            })
-                            .catch(error => console.error('Error checking status:', error));
-                    }
-                    
-                    // Vérifier le statut toutes les 3 secondes si une requête est en cours
-                    if (localStorage.getItem('csvRequested') === 'true') {
-                        const statusInterval = setInterval(() => {
+                        // Vérifier si un CSV a été demandé précédemment
+                        if (localStorage.getItem('csvRequested') === 'true') {
+                            // Vérifier si le CSV est prêt (si le statut est "done")
                             fetch('/status')
                                 .then(response => response.json())
                                 .then(data => {
                                     if (data.status === 'done') {
                                         showCsvReadyNotification();
                                         localStorage.removeItem('csvRequested');
-                                        clearInterval(statusInterval);
                                     }
                                 })
-                                .catch(error => {
-                                    console.error('Error checking status:', error);
-                                    clearInterval(statusInterval);
-                                });
-                        }, 3000);
-                    }
+                                .catch(error => console.error('Error checking status:', error));
+                        }
+                        
+                        // Vérifier le statut toutes les 3 secondes si une requête est en cours
+                        if (localStorage.getItem('csvRequested') === 'true') {
+                            const statusInterval = setInterval(() => {
+                                fetch('/status')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.status === 'done') {
+                                            showCsvReadyNotification();
+                                            localStorage.removeItem('csvRequested');
+                                            clearInterval(statusInterval);
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error checking status:', error);
+                                        clearInterval(statusInterval);
+                                    });
+                            }, 3000);
+                        }
+                    });
                 });
             </script>
             
