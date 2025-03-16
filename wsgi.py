@@ -1,4 +1,4 @@
-from app import app
+from simple_app import app
 
 # Point d'entrée pour Vercel
 if __name__ == "__main__":
