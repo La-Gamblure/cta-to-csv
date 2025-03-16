@@ -294,17 +294,28 @@ def api_download():
     if status["status"] != "complete":
         return jsonify({"error": "Le traitement n'est pas encore terminé"})
     
-    # Créer un fichier en mémoire
-    mem_file = io.BytesIO()
-    mem_file.write(status["result"].encode('utf-8'))
-    mem_file.seek(0)
-    
-    return send_file(
-        mem_file,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
-    )
+    try:
+        # Créer un fichier en mémoire
+        mem_file = io.BytesIO()
+        mem_file.write(status["result"].encode('utf-8'))
+        mem_file.seek(0)
+        
+        response = send_file(
+            mem_file,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
+        )
+        
+        # Ajouter des en-têtes pour éviter la mise en cache
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        
+        return response
+    except Exception as e:
+        app.logger.error(f"Erreur lors du téléchargement du CSV: {str(e)}")
+        return jsonify({"error": f"Erreur lors du téléchargement: {str(e)}"}), 500
 
 @app.route('/api/process', methods=['GET'])
 def api_process():

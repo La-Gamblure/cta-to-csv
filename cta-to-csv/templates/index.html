@@ -732,21 +732,14 @@
                                 return response.json();
                             })
                             .then(data => {
-                                if (data.error) {
-                                    // Afficher l'erreur
-                                    clearInterval(messageInterval);
-                                    document.getElementById('loading').style.display = 'none';
-                                    counterElement.style.display = 'none';
-                                    alert(`Erreur: ${data.error}`);
-                                    return;
-                                }
+                                console.log("Status data:", data);
                                 
-                                document.getElementById('counter-text').textContent = data.count;
+                                // Mettre à jour le compteur
+                                const counterElement = document.getElementById('nft-counter');
+                                counterElement.textContent = `${data.count} NFTs récupérés`;
                                 
-                                if (data.status === 'processing') {
-                                    setTimeout(updateCounter, 1000);
-                                } else if (data.status === 'complete') {
-                                    // Arrêter le changement de messages
+                                if (data.status === "complete") {
+                                    // Arrêter les messages drôles
                                     clearInterval(messageInterval);
                                     
                                     // Masquer le chargement
@@ -763,26 +756,33 @@
                                     loadingElement.innerHTML = '';
                                     loadingElement.appendChild(downloadLink);
                                     
-                                    // Afficher la notification
-                                    showCsvReadyNotification();
-                                    
                                     // Déclencher automatiquement le téléchargement
                                     setTimeout(() => {
                                         window.location.href = `/api/download?address=${encodeURIComponent(address)}`;
                                     }, 1000);
-                                } else if (data.status === 'error') {
-                                    // Afficher l'erreur
+                                    
+                                } else if (data.status === "error") {
+                                    // Arrêter les messages drôles
                                     clearInterval(messageInterval);
+                                    
+                                    // Masquer le chargement
                                     document.getElementById('loading').style.display = 'none';
                                     counterElement.style.display = 'none';
+                                    
                                     alert(`Erreur: ${data.error || 'Une erreur s\'est produite lors du traitement'}`);
+                                } else {
+                                    // Continuer à mettre à jour le compteur
+                                    setTimeout(updateCounter, 1000);
                                 }
                             })
                             .catch(error => {
-                                console.error('Error fetching status:', error);
+                                console.error('Erreur:', error);
                                 setTimeout(updateCounter, 1000); // Réessayer
                             });
                     }
+                    
+                    // Démarrer la mise à jour du compteur
+                    updateCounter();
                     
                     // Fonction pour fermer la notification
                     function closeNotification() {
@@ -881,7 +881,7 @@
                             fetch('/status')
                                 .then(response => response.json())
                                 .then(data => {
-                                    if (data.status === 'done') {
+                                    if (data.status === "done") {
                                         showCsvReadyNotification();
                                         localStorage.removeItem('csvRequested');
                                     }
@@ -895,7 +895,7 @@
                                 fetch('/status')
                                     .then(response => response.json())
                                     .then(data => {
-                                        if (data.status === 'done') {
+                                        if (data.status === "done") {
                                             showCsvReadyNotification();
                                             localStorage.removeItem('csvRequested');
                                             clearInterval(statusInterval);
