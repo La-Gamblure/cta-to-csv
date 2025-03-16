@@ -1,10 +1,10 @@
-from flask import Flask
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "Hello World! This is a simple test for Vercel deployment."
+    return render_template('index.html')
 
 # Point d'entrée pour Vercel
 if __name__ == "__main__":
