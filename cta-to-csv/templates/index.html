@@ -244,6 +244,47 @@
         .csv-notification .btn-close:hover {
             opacity: 1;
         }
+        
+        /* Animation clignotante pour les panneaux "VU À LA TV" */
+        @keyframes blink {
+            0% { opacity: 1; }
+            49% { opacity: 1; }
+            50% { opacity: 0; }
+            99% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        .blink-tv {
+            animation: blink 0.7s infinite;
+            background-color: yellow;
+            color: red;
+            font-weight: bold;
+            padding: 5px 10px;
+            border: 2px solid red;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+            transform: rotate(-15deg);
+            position: absolute;
+            left: -5px;
+            top: 20px;
+            z-index: 10;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Repositionner les bannières pour qu'elles ne masquent pas les titres */
+        .banner-tag {
+            position: absolute;
+            top: -15px;
+            right: 10px;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            z-index: 10;
+            width: auto;
+            white-space: nowrap;
+            overflow: visible;
+            transform: rotate(5deg);
+        }
     </style>
 </head>
 <body>
@@ -378,9 +419,10 @@
                         <!-- Pub 5 : Laveur de pare-brise -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal5" style="background: linear-gradient(135deg, #FF8008, #FFC837); color: white; border: 3px double blue !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: blue; color: white; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: blue; color: white;">
                                     MÉTIER D'AVENIR !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         🧽 DEVENEZ LAVEUR DE PARE-BRISE MILLIONNAIRE !!! 🧽
@@ -398,9 +440,10 @@
                         <!-- Pub 1 : Crypto -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal1" style="background: linear-gradient(135deg, #ff0066, #ff9900); color: white; border: 3px dashed yellow !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: red; color: yellow; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: red; color: yellow;">
                                     OFFRE LIMITÉE !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         💰 DEVENEZ CRYPTO-MILLIONNAIRE EN 7 JOURS !!! 💰
@@ -418,9 +461,10 @@
                         <!-- Pub 2 : Agrandissement -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal2" style="background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border: 3px solid #ff00ff !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: #ff00ff; color: white; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: #ff00ff; color: white;">
                                     100% NATUREL !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         🍆 AGRANDISSEZ VOTRE "WALLET" DE 15CM !!! 🍆
@@ -438,9 +482,10 @@
                         <!-- Pub 3 : Voyance (Monsieur Cissokho) -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal3" style="background: linear-gradient(135deg, #6a11cb, #2575fc); color: white; border: 3px dotted gold !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: gold; color: purple; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: gold; color: purple;">
                                     POUVOIR MYSTIQUE !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         🔮 MONSIEUR CISSOKHO FAIT REVENIR L'ÊTRE AIMÉ !!! 🔮
@@ -458,9 +503,10 @@
                         <!-- Pub 4 : Perte de poids -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal4" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white; border: 3px ridge red !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: red; color: white; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: red; color: white;">
                                     MÉDECINS CHOQUÉS !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         🔥 PERDEZ 25KG EN 2 SEMAINES SANS EFFORT !!! 🔥
@@ -478,9 +524,10 @@
                         <!-- Pub 6 : Gigolos monégasques -->
                         <div class="col-md-6 col-lg-4">
                             <div class="card border-0 shadow pub-card" data-bs-toggle="modal" data-bs-target="#pubModal6" style="background: linear-gradient(135deg, #8E2DE2, #4A00E0); color: white; border: 3px groove gold !important; overflow: hidden; cursor: pointer;">
-                                <div class="position-absolute" style="top: -5px; right: -5px; background-color: gold; color: #8E2DE2; padding: 5px 10px; transform: rotate(15deg); font-weight: bold; font-size: 0.8rem; z-index: 10; width: auto; white-space: nowrap; overflow: visible;">
+                                <div class="position-absolute banner-tag" style="background-color: gold; color: #8E2DE2;">
                                     ULTRA CONFIDENTIEL !!!
                                 </div>
+                                <div class="blink-tv">VU À LA TV !!!</div>
                                 <div class="card-body p-3 text-center">
                                     <h4 style="font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 1.4rem; margin-bottom: 10px;">
                                         🥂 LES SECRETS DES GIGOLOS MONÉGASQUES !!! 🥂
