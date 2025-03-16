@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, jsonify
+from flask import Flask, request, render_template, send_file, jsonify, redirect, url_for
 import csv
 import json
 import urllib.request
@@ -6,14 +6,10 @@ import urllib.parse
 import time
 import io
 import os
-import threading
 import re
 from collections import defaultdict
 
 app = Flask(__name__)
-
-# Dictionnaire pour stocker l'état de chaque requête
-request_status = {}
 
 # Regex pour valider les adresses Ethereum
 ETH_ADDRESS_REGEX = re.compile(r'^0x[a-fA-F0-9]{40}$')
@@ -27,13 +23,6 @@ def fetch_assets_for_address(address):
     assets = []
     cursor = None
     page_size = 200  # Taille de page maximale autorisée
-    
-    # Initialiser le statut de la requête
-    request_status[address] = {
-        'status': 'processing',
-        'count': 0,
-        'assets': []
-    }
     
     try:
         while True:
@@ -50,10 +39,6 @@ def fetch_assets_for_address(address):
                     batch = data['result']
                     assets.extend(batch)
                     
-                    # Mettre à jour le statut
-                    request_status[address]['count'] = len(assets)
-                    request_status[address]['assets'] = assets
-                    
                     if 'cursor' in data and data['cursor'] and len(batch) > 0:
                         cursor = data['cursor']
                         # Pause pour éviter de surcharger l'API
@@ -65,17 +50,12 @@ def fetch_assets_for_address(address):
                     
             except Exception as e:
                 print(f"Erreur lors de la récupération des NFTs: {e}")
-                request_status[address]['status'] = 'error'
-                request_status[address]['error'] = str(e)
                 return {"error": str(e)}, []
         
-        request_status[address]['status'] = 'complete'
         return {"success": f"Récupération terminée. Nombre total de NFTs: {len(assets)}"}, assets
     
     except Exception as e:
         print(f"Erreur générale: {e}")
-        request_status[address]['status'] = 'error'
-        request_status[address]['error'] = str(e)
         return {"error": str(e)}, []
 
 def process_assets(assets):
@@ -202,64 +182,17 @@ def generate_csv(processed_data):
     
     return output.getvalue()
 
-def process_address_async(address):
-    """Traite l'adresse de manière asynchrone"""
-    _, assets = fetch_assets_for_address(address)
-    
-    # Le statut est mis à jour dans fetch_assets_for_address
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/process')
+@app.route('/process', methods=['GET', 'POST'])
 def process():
-    address = request.args.get('address', '')
-    
-    if not address:
-        return jsonify({"error": "Adresse non spécifiée"})
-    
-    if not is_valid_eth_address(address):
-        return jsonify({"error": "Format d'adresse Ethereum invalide. L'adresse doit être au format 0x suivi de 40 caractères hexadécimaux."})
-    
-    # Vérifier si les données sont déjà disponibles
-    if address in request_status and request_status[address]['status'] == 'complete':
-        assets = request_status[address]['assets']
-        
-        if not assets:
-            return jsonify({"error": "Aucun NFT trouvé pour cette adresse"})
-        
-        # Traiter les NFTs
-        processed_data = process_assets(assets)
-        
-        # Générer le fichier CSV
-        csv_data = generate_csv(processed_data)
-        
-        # Créer un fichier en mémoire
-        mem_file = io.BytesIO()
-        mem_file.write(csv_data.encode('utf-8'))
-        mem_file.seek(0)
-        
-        return send_file(
-            mem_file,
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
-        )
+    # Récupérer l'adresse depuis les arguments GET ou le formulaire POST
+    if request.method == 'POST':
+        address = request.form.get('address', '')
     else:
-        # Démarrer le traitement en arrière-plan si ce n'est pas déjà fait
-        if address not in request_status or request_status[address]['status'] not in ['processing', 'complete']:
-            thread = threading.Thread(target=process_address_async, args=(address,))
-            thread.daemon = True
-            thread.start()
-        
-        # Rediriger vers la page d'attente
-        return render_template('index.html')
-
-@app.route('/api/status')
-def api_status():
-    """Endpoint pour vérifier le statut de la récupération des NFTs"""
-    address = request.args.get('address', '')
+        address = request.args.get('address', '')
     
     if not address:
         return jsonify({"error": "Adresse non spécifiée"})
@@ -267,21 +200,29 @@ def api_status():
     if not is_valid_eth_address(address):
         return jsonify({"error": "Format d'adresse Ethereum invalide. L'adresse doit être au format 0x suivi de 40 caractères hexadécimaux."})
     
-    # Vérifier si l'adresse est en cours de traitement
-    if address not in request_status:
-        # Démarrer le traitement en arrière-plan
-        thread = threading.Thread(target=process_address_async, args=(address,))
-        thread.daemon = True
-        thread.start()
-        return jsonify({"status": "processing", "count": 0})
+    # Récupérer les NFTs directement (mode synchrone)
+    _, assets = fetch_assets_for_address(address)
     
-    # Retourner le statut actuel
-    status_data = request_status[address]
-    return jsonify({
-        "status": status_data['status'],
-        "count": status_data['count'],
-        "error": status_data.get('error', '')
-    })
+    if not assets:
+        return jsonify({"error": "Aucun NFT trouvé pour cette adresse"})
+    
+    # Traiter les NFTs
+    processed_data = process_assets(assets)
+    
+    # Générer le fichier CSV
+    csv_data = generate_csv(processed_data)
+    
+    # Créer un fichier en mémoire
+    mem_file = io.BytesIO()
+    mem_file.write(csv_data.encode('utf-8'))
+    mem_file.seek(0)
+    
+    return send_file(
+        mem_file,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
+    )
 
 @app.route('/api/process', methods=['GET'])
 def api_process():
