@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: cta-to-csv
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+    plan: free # Utilise le plan gratuit, changez en "starter" pour un plan payant sans mise en veille
