@@ -22,42 +22,52 @@ def is_valid_eth_address(address):
 
 def fetch_assets_for_address(address):
     """Récupère les NFTs pour une adresse spécifique depuis l'API ImmutableX"""
-    assets = []
-    cursor = None
-    page_size = 200  # Taille de page maximale autorisée
-    
     try:
-        while True:
-            url = f"https://api.x.immutable.com/v1/assets?user={address}&page_size={page_size}"
-            if cursor:
-                url += f"&cursor={cursor}"
-            
-            try:
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req) as response:
-                    data = json.loads(response.read().decode())
-                
-                if 'result' in data:
-                    batch = data['result']
-                    assets.extend(batch)
-                    
-                    if 'cursor' in data and data['cursor'] and len(batch) > 0:
-                        cursor = data['cursor']
-                        # Pause pour éviter de surcharger l'API
-                        time.sleep(0.5)
-                    else:
-                        break
-                else:
-                    break
-                    
-            except Exception as e:
-                print(f"Erreur lors de la récupération des NFTs: {e}")
-                return {"error": str(e)}, []
+        base_url = "https://api.x.immutable.com/v1/assets"
+        cursor = ""
+        assets = []
+        page = 1
+        max_pages = 100  # Limite de sécurité pour éviter les boucles infinies
         
-        return {"success": f"Récupération terminée. Nombre total de NFTs: {len(assets)}"}, assets
-    
+        while page <= max_pages:
+            params = {
+                "user": address,
+                "collection": "0xacb3c6a43d15b907e8433077b6d38ae40936fe2c",  # Collection CTA
+                "status": "imx",
+                "page_size": 200,  # Taille maximale de page
+            }
+            
+            if cursor:
+                params["cursor"] = cursor
+            
+            query_string = urllib.parse.urlencode(params)
+            url = f"{base_url}?{query_string}"
+            
+            req = urllib.request.Request(url, headers={
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0'
+            })
+            
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+                current_assets = data.get("result", [])
+                assets.extend(current_assets)
+                
+                # Mettre à jour le compteur de progression si un statut de traitement existe pour cette adresse
+                if address in processing_status:
+                    processing_status[address]["count"] = len(assets)
+                
+                # Vérifier s'il y a une page suivante
+                cursor = data.get("cursor")
+                if not cursor:
+                    break
+                
+                page += 1
+                # Pause courte pour éviter de surcharger l'API
+                time.sleep(0.1)
+        
+        return {"success": True}, assets
     except Exception as e:
-        print(f"Erreur générale: {e}")
         return {"error": str(e)}, []
 
 def process_assets(assets):
@@ -220,15 +230,13 @@ def process():
     def process_data():
         try:
             # Récupérer les NFTs pour l'adresse
+            processing_status[address]["count"] = 0
             status, assets = fetch_assets_for_address(address)
             
             if "error" in status:
                 processing_status[address]["error"] = status["error"]
                 processing_status[address]["status"] = "error"
                 return
-            
-            # Mettre à jour le compteur
-            processing_status[address]["count"] = len(assets)
             
             # Traiter les NFTs
             processed_data = process_assets(assets)
