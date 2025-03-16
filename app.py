@@ -3,13 +3,15 @@ import csv
 import json
 import urllib.request
 import urllib.parse
-import time
 import io
-import os
 import re
-from collections import defaultdict
+import os
+import time
+import threading
+from datetime import datetime
+import socket
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Regex pour valider les adresses Ethereum
 ETH_ADDRESS_REGEX = re.compile(r'^0x[a-fA-F0-9]{40}$')
@@ -116,10 +118,7 @@ def generate_csv(processed_data):
     # Créer une structure pour stocker les comptages
     # Clé: (nom, rareté, élément, avancement, faction)
     # Valeur: compteurs pour Standard, C, B, A, S et leurs versions foil
-    counts = defaultdict(lambda: {
-        'Standard': 0, 'C': 0, 'B': 0, 'A': 0, 'S': 0,
-        'foil_Standard': 0, 'foil_C': 0, 'foil_B': 0, 'foil_A': 0, 'foil_S': 0
-    })
+    counts = {}
     
     # Compter les cartes par nom, rareté, élément, avancement et faction
     for item in processed_data:
@@ -132,6 +131,12 @@ def generate_csv(processed_data):
         is_foil = item['is_foil']
         
         key = (name, rarity, element, advancement, faction)
+        
+        if key not in counts:
+            counts[key] = {
+                'Standard': 0, 'C': 0, 'B': 0, 'A': 0, 'S': 0,
+                'foil_Standard': 0, 'foil_C': 0, 'foil_B': 0, 'foil_A': 0, 'foil_S': 0
+            }
         
         if not grade:  # Si grade est vide, c'est Standard
             counts[key]['Standard'] += 1
@@ -182,6 +187,9 @@ def generate_csv(processed_data):
     
     return output.getvalue()
 
+# Stockage temporaire des statuts de traitement
+processing_status = {}
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -200,21 +208,91 @@ def process():
     if not is_valid_eth_address(address):
         return jsonify({"error": "Format d'adresse Ethereum invalide. L'adresse doit être au format 0x suivi de 40 caractères hexadécimaux."})
     
-    # Récupérer les NFTs directement (mode synchrone)
-    _, assets = fetch_assets_for_address(address)
+    # Initialiser le statut de traitement
+    processing_status[address] = {
+        "status": "processing",
+        "count": 0,
+        "error": None,
+        "result": None
+    }
     
-    if not assets:
-        return jsonify({"error": "Aucun NFT trouvé pour cette adresse"})
+    # Démarrer le traitement en arrière-plan
+    def process_data():
+        try:
+            # Récupérer les NFTs pour l'adresse
+            status, assets = fetch_assets_for_address(address)
+            
+            if "error" in status:
+                processing_status[address]["error"] = status["error"]
+                processing_status[address]["status"] = "error"
+                return
+            
+            # Mettre à jour le compteur
+            processing_status[address]["count"] = len(assets)
+            
+            # Traiter les NFTs
+            processed_data = process_assets(assets)
+            
+            # Générer le fichier CSV
+            csv_data = generate_csv(processed_data)
+            
+            # Stocker le résultat
+            processing_status[address]["result"] = csv_data
+            processing_status[address]["status"] = "complete"
+            
+        except Exception as e:
+            processing_status[address]["error"] = str(e)
+            processing_status[address]["status"] = "error"
     
-    # Traiter les NFTs
-    processed_data = process_assets(assets)
+    # Lancer le thread de traitement
+    thread = threading.Thread(target=process_data)
+    thread.daemon = True
+    thread.start()
     
-    # Générer le fichier CSV
-    csv_data = generate_csv(processed_data)
+    # Rediriger ou répondre avec JSON en fonction du type de requête
+    if request.method == 'POST' and request.headers.get('Content-Type') == 'application/x-www-form-urlencoded':
+        # Redirection si c'est un formulaire HTML normal
+        return redirect(url_for('index', address=address))
+    else:
+        # Réponse JSON pour les requêtes AJAX
+        return jsonify({"status": "processing", "address": address})
+
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    address = request.args.get('address', '')
+    
+    if not address:
+        return jsonify({"error": "Adresse non spécifiée"})
+    
+    if address not in processing_status:
+        return jsonify({"error": "Aucun traitement en cours pour cette adresse"})
+    
+    status = processing_status[address]
+    
+    return jsonify({
+        "status": status["status"],
+        "count": status["count"],
+        "error": status["error"]
+    })
+
+@app.route('/api/download', methods=['GET'])
+def api_download():
+    address = request.args.get('address', '')
+    
+    if not address:
+        return jsonify({"error": "Adresse non spécifiée"})
+    
+    if address not in processing_status:
+        return jsonify({"error": "Aucun traitement trouvé pour cette adresse"})
+    
+    status = processing_status[address]
+    
+    if status["status"] != "complete":
+        return jsonify({"error": "Le traitement n'est pas encore terminé"})
     
     # Créer un fichier en mémoire
     mem_file = io.BytesIO()
-    mem_file.write(csv_data.encode('utf-8'))
+    mem_file.write(status["result"].encode('utf-8'))
     mem_file.seek(0)
     
     return send_file(
@@ -234,29 +312,8 @@ def api_process():
     if not is_valid_eth_address(address):
         return jsonify({"error": "Format d'adresse Ethereum invalide. L'adresse doit être au format 0x suivi de 40 caractères hexadécimaux."})
     
-    # Récupérer les NFTs pour l'adresse
-    status, assets = fetch_assets_for_address(address)
-    
-    if "error" in status:
-        return jsonify(status)
-    
-    # Traiter les NFTs
-    processed_data = process_assets(assets)
-    
-    # Générer le fichier CSV
-    csv_data = generate_csv(processed_data)
-    
-    # Créer un fichier en mémoire
-    mem_file = io.BytesIO()
-    mem_file.write(csv_data.encode('utf-8'))
-    mem_file.seek(0)
-    
-    return send_file(
-        mem_file,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name=f"nft_par_nom_rarete_element_{address[:8]}.csv"
-    )
+    # Utiliser la route process
+    return process()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8081)
+    app.run(debug=True)

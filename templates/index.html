@@ -692,10 +692,27 @@
                         funnyMessages[currentMessageIndex].style.display = 'block';
                     }, 5000);
                     
+                    // Démarrer le traitement
+                    fetch(`/process?address=${encodeURIComponent(address)}`, {
+                        method: 'GET'
+                    })
+                    .then(response => response.json())
+                    .catch(error => {
+                        clearInterval(messageInterval);
+                        document.getElementById('loading').style.display = 'none';
+                        counterElement.style.display = 'none';
+                        alert(`Erreur de connexion: ${error}`);
+                    });
+                    
                     // Fonction pour mettre à jour le compteur
                     function updateCounter() {
-                        fetch(`/api/status?address=${address}`)
-                            .then(response => response.json())
+                        fetch(`/api/status?address=${encodeURIComponent(address)}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
                             .then(data => {
                                 if (data.error) {
                                     // Afficher l'erreur
@@ -714,31 +731,33 @@
                                     // Arrêter le changement de messages
                                     clearInterval(messageInterval);
                                     
+                                    // Masquer le chargement
+                                    document.getElementById('loading').style.display = 'none';
+                                    
+                                    // Afficher le lien de téléchargement
+                                    const downloadLink = document.createElement('a');
+                                    downloadLink.href = `/api/download?address=${encodeURIComponent(address)}`;
+                                    downloadLink.className = 'btn btn-success btn-lg mt-3';
+                                    downloadLink.innerHTML = '<i class="bi bi-download"></i> Télécharger le CSV';
+                                    downloadLink.download = `nft_par_nom_rarete_element_${address.substring(0, 8)}.csv`;
+                                    
+                                    const loadingElement = document.getElementById('loading-container');
+                                    loadingElement.innerHTML = '';
+                                    loadingElement.appendChild(downloadLink);
+                                    
                                     // Afficher la notification
-                                    const notification = document.getElementById('csv-notification');
-                                    notification.classList.add('show');
-                                    
-                                    // Masquer la notification après 5 secondes
-                                    setTimeout(() => {
-                                        notification.classList.remove('show');
-                                    }, 5000);
-                                    
-                                    // Télécharger le fichier CSV
-                                    window.location.href = `/process?address=${address}`;
+                                    showCsvReadyNotification();
                                 } else if (data.status === 'error') {
                                     // Afficher l'erreur
                                     clearInterval(messageInterval);
                                     document.getElementById('loading').style.display = 'none';
                                     counterElement.style.display = 'none';
-                                    alert(`Erreur: ${data.error}`);
+                                    alert(`Erreur: ${data.error || 'Une erreur s\'est produite lors du traitement'}`);
                                 }
                             })
                             .catch(error => {
-                                console.error('Erreur:', error);
-                                clearInterval(messageInterval);
-                                document.getElementById('loading').style.display = 'none';
-                                counterElement.style.display = 'none';
-                                alert(`Erreur de connexion au serveur: ${error.message}`);
+                                console.error('Error fetching status:', error);
+                                setTimeout(updateCounter, 1000); // Réessayer
                             });
                     }
                     
