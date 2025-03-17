@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTA to CSV - Version Focus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #343a40;
+            color: white;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+        }
+        .form-control {
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #343a40;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        .btn-primary:hover {
+            background-color: #23272b;
+        }
+        .status-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress {
+            height: 25px;
+            margin-bottom: 15px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        #downloadBtn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-center">CTA to CSV - Version Focus</h2>
+                <p class="text-center mb-0">Analysez votre collection NFT et obtenez un rapport détaillé au format CSV</p>
+            </div>
+            <div class="card-body">
+                <form id="addressForm">
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adresse ImmutableX (commence par 0x)</label>
+                        <input type="text" class="form-control" id="address" name="address" placeholder="0x..." required pattern="^0x[a-fA-F0-9]{40}$">
+                        <div class="form-text">Exemple: 0x1234567890abcdef1234567890abcdef12345678</div>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Générer CSV</button>
+                    </div>
+                </form>
+                
+                <div id="statusContainer" class="status-container">
+                    <h4>Statut du traitement</h4>
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="statusText" class="alert alert-info">
+                        Initialisation du traitement...
+                    </div>
+                    <div id="countInfo" class="alert alert-secondary">
+                        NFTs récupérés: <span id="nftCount">0</span>
+                    </div>
+                    <div class="text-center">
+                        <button id="downloadBtn" class="btn btn-success">Télécharger le CSV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addressForm = document.getElementById('addressForm');
+            const statusContainer = document.getElementById('statusContainer');
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            const nftCount = document.getElementById('nftCount');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            let currentAddress = '';
+            let statusCheckInterval = null;
+            
+            addressForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const address = document.getElementById('address').value.trim();
+                if (!address) {
+                    alert('Veuillez entrer une adresse valide');
+                    return;
+                }
+                
+                // Réinitialiser l'interface
+                statusContainer.style.display = 'block';
+                progressBar.style.width = '10%';
+                statusText.className = 'alert alert-info';
+                statusText.textContent = 'Initialisation du traitement...';
+                nftCount.textContent = '0';
+                downloadBtn.style.display = 'none';
+                
+                // Enregistrer l'adresse actuelle
+                currentAddress = address;
+                
+                // Envoyer la requête
+                fetch('/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'address': address
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+                    
+                    // Démarrer la vérification du statut
+                    startStatusCheck();
+                })
+                .catch(error => {
+                    showError('Erreur lors de la communication avec le serveur: ' + error);
+                });
+            });
+            
+            function startStatusCheck() {
+                // Arrêter l'intervalle précédent si existant
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                }
+                
+                // Définir un nouvel intervalle
+                statusCheckInterval = setInterval(checkStatus, 1000);
+            }
+            
+            function checkStatus() {
+                fetch(`/status?address=${currentAddress}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                        clearInterval(statusCheckInterval);
+                        return;
+                    }
+                    
+                    // Mettre à jour le compteur
+                    nftCount.textContent = data.count;
+                    
+                    // Mettre à jour la barre de progression
+                    if (data.status === 'processing') {
+                        const progress = Math.min(90, 10 + (data.count / 5));
+                        progressBar.style.width = `${progress}%`;
+                        statusText.className = 'alert alert-info';
+                        statusText.textContent = 'Récupération des NFTs en cours...';
+                    } else if (data.status === 'complete') {
+                        progressBar.style.width = '100%';
+                        statusText.className = 'alert alert-success';
+                        statusText.textContent = 'Traitement terminé! Vous pouvez télécharger le CSV.';
+                        downloadBtn.style.display = 'inline-block';
+                        clearInterval(statusCheckInterval);
+                    } else if (data.status === 'error') {
+                        showError(data.error || 'Une erreur est survenue pendant le traitement.');
+                        clearInterval(statusCheckInterval);
+                    }
+                })
+                .catch(error => {
+                    showError('Erreur lors de la vérification du statut: ' + error);
+                    clearInterval(statusCheckInterval);
+                });
+            }
+            
+            function showError(message) {
+                statusText.className = 'alert alert-danger';
+                statusText.textContent = message;
+                progressBar.style.width = '100%';
+                progressBar.className = 'progress-bar bg-danger';
+            }
+            
+            downloadBtn.addEventListener('click', function() {
+                window.location.href = `/download?address=${currentAddress}`;
+            });
+        });
+    </script>
+</body>
+</html>
