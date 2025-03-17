@@ -11,7 +11,7 @@ Une application web simple permettant d'analyser une collection NFT sur Immutabl
 
 ## Déploiement
 
-Cette application est configurée pour être déployée sur Vercel.
+Cette application est configurée pour être déployée sur Render sous le nom "cta-focus".
 
 ## Technologies utilisées
 
