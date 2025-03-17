@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cta-to-csv
+    name: cta-focus
     env: python
     buildCommand: ./build.sh
     startCommand: gunicorn wsgi:app
